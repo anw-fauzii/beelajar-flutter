@@ -1,52 +1,40 @@
 workflows:
-  android-workflow:
-    name: Android Workflow
-    instance_type: mac_mini_m1
+  ios-native-workflow:
+    name: iOS Native
     max_build_duration: 120
+    instance_type: mac_mini_m1
     environment:
-      groups:
-        - google_credentials # <-- (Includes GCLOUD_KEY_FILE, GOOGLE_CREDENTIALS)
       vars:
-        FIREBASE_PROJECT: "YOUR_FIREBASE_PROJECT_NAME" # <-- Put your Firebase Project Name here
-      flutter: stable
-      xcode: latest # <-- set to specific version e.g. 14.3, 15.0 to avoid unexpected updates.
+        BUNDLE_ID: "io.codemagic.sample.iosnative"
+        XCODE_WORKSPACE: "CodemagicSample.xcworkspace" # <-- Put the name of your Xcode workspace here
+        XCODE_SCHEME: "CodemagicSample" # <-- Put the name of your Xcode scheme here
+      xcode: latest
       cocoapods: default
     scripts:
-      - name: Set up debug.keystore
-        script: |
-          rm -f ~/.android/debug.keystore
-          keytool -genkeypair -alias androiddebugkey -keypass android -keystore ~/.android/debug.keystore -storepass android -dname 'CN=Android Debug,O=Android,C=US' -keyalg 'RSA' -keysize 2048 -validity 10000
-      - name: Set up local.properties
-        script: |
-          echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/android/local.properties"
-      - name: Get Flutter packages
-        script: |
-          flutter packages pub get
-      - name: Build APK with Flutter
-        script: |
-          flutter build apk --debug
-      - name: Create debug and test APK
-        script: |
-          set -ex
-          cd android
-          ./gradlew app:assembleAndroidTest
-          ./gradlew app:assembleDebug -Ptarget="$CM_BUILD_DIR/integration_test/app_test.dart"
-      - name: Run Firebase Test Lab tests
-        script: |
-          set -ex
-          echo $GCLOUD_KEY_FILE | base64 --decode > ./gcloud_key_file.json
-          gcloud auth activate-service-account --key-file=gcloud_key_file.json
-          gcloud --quiet config set project $FIREBASE_PROJECT
-          gcloud firebase test android run \
-            --type instrumentation \
-            --app build/app/outputs/apk/debug/app-debug.apk \
-            --test build/app/outputs/apk/androidTest/debug/app-debug-androidTest.apk \
-            --timeout 3m
+      - name: Install CocoaPods dependencies
+        script: | 
+          pod install
+      - name: Build ipa for distribution
+        script: | 
+          xcodebuild \
+            -workspace "$CM_BUILD_DIR/$XCODE_WORKSPACE" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Release \
+            -sdk iphoneos \
+            archive \
+            -archivePath "$CM_BUILD_DIR/build/ios/archive/$(date +%Y%m%d%H%M%S).xcarchive"
+          
+          xcodebuild \
+            -exportArchive \
+            -archivePath "$CM_BUILD_DIR/build/ios/archive/$(date +%Y%m%d%H%M%S).xcarchive" \
+            -exportPath "$CM_BUILD_DIR/build/ios/ipa" \
+            -exportOptionsPlist "$CM_BUILD_DIR/export_options.plist"
+
     artifacts:
-      - build/**/outputs/**/*.apk
-      - build/**/outputs/**/*.aab
-      - build/**/outputs/**/mapping.txt
-      - flutter_drive.log
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $CM_BUILD_DIR/build/ios/archive/**/*.app
+      - $CM_BUILD_DIR/build/ios/archive/**/*.dSYM
     publishing:
       email:
         recipients:
@@ -55,54 +43,13 @@ workflows:
         notify:
           success: true
           failure: false
-      slack:
-        channel: "#channel-name"
-        notify_on_build_start: true
-        notify:
-          success: true
-          failure: false
+      app_store_connect:
+        auth: integration
 
-  ios-workflow:
-    name: iOS Workflow
-    instance_type: mac_mini_m1
-    environment:
-      xcode: 15.0 # <-- Set Xcode version to 15 or newer
-      groups:
-        - ios_credentials
-      vars:
-        BUNDLE_ID: "io.codemagic.ftlflutter"
-        TEST_BUNDLE_ID: "io.codemagic.ftlflutter.uitests.xctrunner"
-    scripts:
-      - name: Keychain setup
-        script: |
-          keychain initialize
-          app-store-connect fetch-signing-files ${BUNDLE_ID} --create
-          app-store-connect fetch-signing-files ${TEST_BUNDLE_ID} --create
-          keychain add-certificates
-          xcode-project use-profiles --code-signing-setup-verbose-logging
+        # Configuration related to TestFlight (optional)
+        # Note: This action is performed during post-processing.
+        submit_to_testflight: false
 
-      - name: Build app for testing
-        script: |
-          set -ex
-          flutter build ios --release
-          cd ios
-          xcodebuild \
-            -workspace Runner.xcworkspace \
-            -scheme Runner \
-            -config Flutter/Release.xcconfig \
-            -derivedDataPath "../build/ios_integ" \
-            -sdk iphoneos \
-            build-for-testing
-
-      - name: Package tests bundle
-        script: |
-          set -ex
-          cd ./build/ios_integ/Build/Products
-          zip -r "ios_tests.zip" *-iphoneos *.xctestrun
-
-      - name: Run tests in Firebase Test Lab
-        script: |
-          gcloud firebase test ios run --test "build/ios_integ/Build/Products/ios_tests.zip"
-
-    artifacts:
-      - "**/ios_tests.zip"
+        # Configuration related to App Store (optional)
+        # Note: This action is performed during post-processing.
+        submit_to_app_store: false
