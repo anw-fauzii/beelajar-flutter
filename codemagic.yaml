@@ -6,12 +6,12 @@ workflows:
     environment:
       groups:
          - ios
-        # - ios_creds # <-- (group contains variables: APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_KEY_IDENTIFIER, APP_STORE_CONNECT_PRIVATE_KEY, CERTIFICATE_PRIVATE_KEY)
       vars:
         XCODE_WORKSPACE: "swiftly.xcworkspace"
         XCODE_SCHEME: "swiftly"
         BUNDLE_ID: "io.codemagic.cmswiftly"
         APP_STORE_APP_ID: 1570610860
+        COCOAPODS_VERSION: "latest" # Optionally specify a version
       # xcode: 14.3
       cocoapods: default
     triggering:
@@ -24,9 +24,15 @@ workflows:
           include: true
           source: true
     scripts:
+      - name: Clean environment
+        script: |
+          rm -rf ~/Library/Developer/Xcode/DerivedData
+          rm -rf Pods
+          rm Podfile.lock
       - name: Install pods
         script: |
-          pod install
+          gem install cocoapods -v $COCOAPODS_VERSION # Ensure the correct CocoaPods version is used
+          pod install || { echo "Pod install failed"; exit 1; }
       - name: Set up keychain to be used for codesigning using Codemagic CLI 'keychain' command
         script: |
           keychain initialize
@@ -66,6 +72,7 @@ workflows:
         notify:
           success: false # To not receive a notification when a build succeeds
           failure: false # To not receive a notification when a build fails
+
   ios-manual-code-signing:
     name: iOS manual code signing
     instance_type: mac_mini_m1
