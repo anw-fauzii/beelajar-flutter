@@ -27,6 +27,11 @@ workflows:
       - name: Set up keychain to be used for codesigning using Codemagic CLI 'keychain' command
         script: |
           keychain initialize
+      - name: Add certificates to keychain (skip if not available)
+        script: |
+          # Ensure certificates are uploaded to the correct directory
+          # security import /path/to/your/certificate.p12 -k /Users/builder/Library/codemagic-cli-tools/keychains/your-keychain.keychain-db -P your_password -A
+          echo "No certificates provided or available. Skipping certificate import."
       - name: Use system default keychain
         script: |
           keychain add-certificates
@@ -35,7 +40,6 @@ workflows:
           xcode-project use-profiles
       - name: Increment build number
         script: |
-          # agvtool new-version -all $(($BUILD_NUMBER + 1))
           agvtool new-version -all $(($(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID") + 1))
       - name: Build ipa for distribution
         script: |
