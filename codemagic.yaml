@@ -6,8 +6,6 @@ workflows:
       ios_signing:
         distribution_type: ad_hoc # Gunakan metode distribusi ad-hoc jika tidak menggunakan App Store
         bundle_identifier: io.codemagic.fluttersample
-      vars:
-        # Tidak perlu APP_STORE_APPLE_ID atau APP_STORE_CONNECT_ISSUER_ID
       flutter: stable
     scripts:
       - name: Get Flutter packages
