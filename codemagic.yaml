@@ -3,8 +3,11 @@ workflows:
     name: iOS Workflow
     max_build_duration: 120
     environment:
+      ios_signing:
+        distribution_type: ad_hoc # Gunakan metode distribusi ad-hoc jika tidak menggunakan App Store
+        bundle_identifier: io.codemagic.fluttersample
       vars:
-        APP_STORE_APPLE_ID: 1555555551
+        # Tidak perlu APP_STORE_APPLE_ID atau APP_STORE_CONNECT_ISSUER_ID
       flutter: stable
     scripts:
       - name: Get Flutter packages
@@ -16,7 +19,7 @@ workflows:
       - name: Flutter analyze
         script: | 
           flutter analyze
-        ignore_failure: true  # Mengabaikan kegagalan analisis kode jika diinginkan
+        ignore_failure: true
       - name: Flutter unit tests
         script: | 
           flutter test
@@ -25,8 +28,8 @@ workflows:
         script: | 
           flutter build ipa --release \
             --build-name=1.0.0 \
-            --build-number=$(($(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID") + 1)) \
-            --export-options-plist=/Users/builder/export_options.plist
+            --build-number=$(($(app-store-connect get-latest-build-number "$BUNDLE_ID") + 1)) \
+            --export-options-plist=/path/to/your/export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
@@ -39,3 +42,4 @@ workflows:
         notify:
           success: true
           failure: false
+      # Hapus bagian app_store_connect jika tidak digunakan
