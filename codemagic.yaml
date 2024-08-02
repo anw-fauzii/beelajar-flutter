@@ -26,9 +26,29 @@ workflows:
     scripts:
       - name: Clean environment
         script: |
-          rm -rf ~/Library/Developer/Xcode/DerivedData
-          rm -rf Pods
-          rm Podfile.lock
+          echo "Cleaning environment..."
+          # Check and remove DerivedData
+          if [ -d "$HOME/Library/Developer/Xcode/DerivedData" ]; then
+            rm -rf "$HOME/Library/Developer/Xcode/DerivedData"
+          else
+            echo "DerivedData directory not found."
+          fi
+
+          # Check and remove Pods directory
+          if [ -d "Pods" ]; then
+            rm -rf Pods
+          else
+            echo "Pods directory not found."
+          fi
+
+          # Check and remove Podfile.lock
+          if [ -f "Podfile.lock" ]; then
+            rm Podfile.lock
+          else
+            echo "Podfile.lock not found."
+          fi
+
+          echo "Environment cleanup completed."
       - name: Install pods
         script: |
           gem install cocoapods -v $COCOAPODS_VERSION # Ensure the correct CocoaPods version is used
