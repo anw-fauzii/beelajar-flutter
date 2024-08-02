@@ -2,9 +2,6 @@ workflows:
   ios-workflow:
     name: iOS Workflow
     max_build_duration: 120
-    integrations:
-      # Uncomment if you decide to use App Store Connect later
-      # app_store_connect: codemagic
     environment:
       vars:
         APP_STORE_APPLE_ID: 1555555551
@@ -41,7 +38,7 @@ workflows:
         notify:
           success: true
           failure: false
-      # Uncomment if you decide to use App Store Connect later
+      # Jika Anda memerlukan integrasi di masa depan, tambahkan bagian ini kembali dengan konfigurasi yang benar.
       # app_store_connect:
       #   auth: integration
       #   submit_to_testflight: true
