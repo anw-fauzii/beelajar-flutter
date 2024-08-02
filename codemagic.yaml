@@ -4,7 +4,7 @@ workflows:
     max_build_duration: 120
     environment:
       ios_signing:
-        distribution_type: development  # Menggunakan distribusi untuk pengembangan
+        distribution_type: development  # Menggunakan profil provisioning pengembangan
         bundle_identifier: io.codemagic.fluttersample
       flutter: stable
     scripts:
