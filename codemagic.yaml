@@ -2,24 +2,18 @@ workflows:
   ios-workflow:
     name: iOS Workflow
     max_build_duration: 120
-    instance_type: mac_mini_m1
-    integrations:
-      app_store_connect: codemagic
     environment:
       ios_signing:
-        distribution_type: development # Gunakan development jika ad-hoc tidak tersedia
+        distribution_type: development # Ubah sesuai profil provisioning yang tersedia
         bundle_identifier: io.codemagic.fluttersample
       flutter: stable
-      xcode: latest
-      cocoapods: default
     scripts:
       - name: Get Flutter packages
         script: |
           flutter packages pub get
-      - name: Install CocoaPods dependencies
+      - name: Install pods
         script: |
-          cd ios
-          pod install
+          find . -name "Podfile" -execdir pod install \;
       - name: Flutter analyze
         script: |
           flutter analyze
@@ -30,9 +24,9 @@ workflows:
         ignore_failure: true
       - name: Build IPA
         script: |
-          flutter build ipa --release \
+          flutter build ios --release \
             --build-name=1.0.0 \
-            --build-number=$(($(app-store-connect get-latest-build-number "$APP_STORE_APPLE_ID") + 1)) \
+            --build-number=$(($(app-store-connect get-latest-build-number "$BUNDLE_ID") + 1)) \
             --export-options-plist=/path/to/your/export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
@@ -46,10 +40,4 @@ workflows:
         notify:
           success: true
           failure: false
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
-        beta_groups:
-          - group name 1
-          - group name 2
-        submit_to_app_store: false
+      # Hapus bagian app_store_connect jika tidak digunakan
