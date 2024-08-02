@@ -24,10 +24,6 @@ workflows:
           include: true
           source: true
     scripts:
-        - name: Install dependencies
-        script: |
-          flutter pub get
-          gem install cocoapods
       - name: Install pods
         script: |
           pod install
