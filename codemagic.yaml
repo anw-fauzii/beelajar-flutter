@@ -1,4 +1,34 @@
 workflows:
+ios:
+    name: iOS Workflow
+    max_build_duration: 60
+    environment:
+      vars:
+        FLUTTER_BUILD_MODE: release
+        FLUTTER_BUILD_NAME: 1.0.0
+        FLUTTER_BUILD_NUMBER: 1
+    scripts:
+      - name: Install dependencies
+        script: |
+          flutter pub get
+          gem install cocoapods
+
+      - name: Install pods
+        script: |
+          cd ios
+          pod install --verbose
+
+      - name: Build iOS
+        script: |
+          flutter build ios --release
+
+    artifacts:
+      - build/ios/iphoneos/*.ipa
+
+    cache:
+      directories:
+        - ~/.pub-cache
+        - ios/Pods
   ios-automatic-code-signing:
     name: iOS automatic code signing
     instance_type: mac_mini_m1
